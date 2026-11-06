@@ -9,3 +9,11 @@ Un /ack sans statut syn pour son origine donne 403, y compris après une poigné
 Une erreur interne ou un appel au camarade qui échoue donne 500. 
 
 Les statuts sont conservés en mémoire jusqu’au redémarrage.
+
+
+
+Pour lancer le serveur, utilise la commande suivante en remplaçant l’adresse IP par celle de ton ordinateur , exemple:
+
+```powershell
+npm start -- http://0.0.0.0:3000
+```
