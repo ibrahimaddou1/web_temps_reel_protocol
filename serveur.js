@@ -35,6 +35,7 @@ function envoyer(pair, route, timeout) {
 const app = express();
 app.use(express.json());
 const pairs = new Map();
+const actionsUniques = new Set();
 
 app.post('/syn', async (req, res) => {
   const pair = origine(req.get('Origin'));
@@ -59,6 +60,7 @@ app.post('/syn-ack', async (req, res) => {
   const pair = origine(req.get('Origin'));
   if (!pair) return res.sendStatus(400);
   await envoyer(pair, '/ack', 4000);
+  pairs.set(pair, { statut: 'connecté' });
   res.sendStatus(200);
 });
 
@@ -88,7 +90,38 @@ app.post('/forget', (req, res) => {
   console.log('Serveur oublié :', pair);
   res.sendStatus(204);
 });
+app.post('/ingress', (req, res) => {
+  const pair = origine(req.get('Origin'));
+  const message = req.body;
+  if (
+    !pair || !message || typeof message !== 'object' || Array.isArray(message) ||
+    typeof message.action !== 'string' || !message.action.trim() ||
+    (message.payload !== undefined &&
+      (!message.payload || typeof message.payload !== 'object' || Array.isArray(message.payload)))
+  ) {
+    return res.sendStatus(400);
+  }
+  const etat = pairs.get(pair);
+  if (etat?.statut !== 'connecté') return res.sendStatus(403);
+  if (!etat.actionsIngerees) etat.actionsIngerees = new Set();
+  if (actionsUniques.has(message.action) && etat.actionsIngerees.has(message.action)) {
+    return res.sendStatus(409);
+  }
+  console.log('Message reçu de', pair, message);
+  etat.actionsIngerees.add(message.action);
+  res.sendStatus(201);
+});
+
+app.get('/health', (req, res) => res.sendStatus(204));
+
+app.get('/pong', (req, res) => {
+  const pair = origine(req.get('Origin'));
+  if (pairs.get(pair)?.statut !== 'connecté') return res.sendStatus(403);
+  res.sendStatus(204);
+});
+
 app.use((err, req, res, next) => {
+  if (err.type === 'entity.parse.failed') return res.sendStatus(400);
   console.error(req.path, err.message);
   res.sendStatus(500);
 });
