@@ -229,10 +229,17 @@ const serveur = app.listen(port, '0.0.0.0', () => {
 });
 
 const websocket = new WebSocketServer({ server: serveur, path: '/ws' });
-websocket.on('connection', (connexion, req) => {
-  console.log('Client WebSocket connecté', req.socket.remoteAddress);
-  connexion.on('close', () => console.log('Client WebSocket déconnecté'));
-  connexion.on('error', err => console.error('Erreur WebSocket :', err.message));
+websocket.on('connection', connexion => {
+  console.log('Client WebSocket connecté');
+  connexion.on('close', () => {
+    console.log('Client WebSocket déconnecté');
+  });
+  connexion.on('error', err => {
+    console.error('Erreur WebSocket :', err.message);
+  });
+});
+websocket.on('error', err => {
+  console.error('Erreur serveur WebSocket :', err.message);
 });
 
 readline.createInterface({ input: process.stdin }).on('line', async ligne => {

@@ -24,6 +24,8 @@ npm run client -- ws://localhost:3000/ws
 
 Le client affiche `Connecté au serveur WebSocket`. Le serveur affiche `Client WebSocket connecté`.
 
+Les connexions, les déconnexions et les erreurs WebSocket sont affichées dans le terminal.
+
 Utiliser Ctrl+C pour arrêter le client ou le serveur.
 
 Pour tester depuis un autre ordinateur, remplacer `localhost` dans les deux commandes par l’IPv4 de l’ordinateur qui héberge le serveur. Le port 3000 doit être accessible depuis cet ordinateur.

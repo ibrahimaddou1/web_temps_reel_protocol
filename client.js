@@ -9,11 +9,21 @@ try {
   process.exit(1);
 }
 
-connexion.on('open', () => console.log('Connecté au serveur WebSocket', adresse));
-connexion.on('close', () => console.log('Connexion WebSocket fermée'));
+connexion.on('open', () => {
+  console.log('Connecté au serveur WebSocket', adresse);
+});
+connexion.on('close', () => {
+  console.log('Connexion WebSocket fermée');
+});
 connexion.on('error', err => {
   console.error('Connexion WebSocket échouée :', err.message);
   process.exitCode = 1;
 });
 
-process.on('SIGINT', () => connexion.close());
+process.on('SIGINT', () => {
+  if (connexion.readyState === WebSocket.OPEN) {
+    connexion.close();
+  } else {
+    connexion.terminate();
+  }
+});
