@@ -26,6 +26,8 @@ Le client affiche `Connecté au serveur WebSocket`. Le serveur affiche `Client W
 
 Les connexions, les déconnexions et les erreurs WebSocket sont affichées dans le terminal.
 
+Le serveur envoie un ping WebSocket toutes les 5 secondes lorsqu’aucun pong n’est en attente. Le client répond automatiquement. Sans pong sous 15 secondes, le serveur ferme la connexion. Le client ferme aussi la connexion s’il ne reçoit aucun ping pendant 20 secondes. Un message indique la connexion perdue.
+
 Utiliser Ctrl+C pour arrêter le client ou le serveur.
 
 Pour tester depuis un autre ordinateur, remplacer `localhost` dans les deux commandes par l’IPv4 de l’ordinateur qui héberge le serveur. Le port 3000 doit être accessible depuis cet ordinateur.
