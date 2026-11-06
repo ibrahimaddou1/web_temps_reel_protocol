@@ -230,6 +230,26 @@ const serveur = app.listen(port, '0.0.0.0', () => {
 
 const websocket = new WebSocketServer({ server: serveur, path: '/ws' });
 websocket.on('connection', connexion => {
+  let attentePong;
+  const intervalle = setInterval(() => {
+    if (attentePong) return;
+    attentePong = setTimeout(() => {
+      console.log('Connexion WebSocket perdue : aucun pong reçu');
+      connexion.terminate();
+    }, 15000);
+    connexion.ping();
+  }, 5000);
+
+  connexion.on('pong', () => {
+    clearTimeout(attentePong);
+    attentePong = undefined;
+  });
+  connexion.on('close', () => {
+    clearInterval(intervalle);
+    clearTimeout(attentePong);
+  });
+});
+websocket.on('connection', connexion => {
   console.log('Client WebSocket connecté');
   connexion.on('close', () => {
     console.log('Client WebSocket déconnecté');

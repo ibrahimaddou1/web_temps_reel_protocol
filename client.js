@@ -2,6 +2,16 @@ const WebSocket = require('ws');
 const readline = require('node:readline');
 const adresse = process.argv[2] || 'ws://localhost:3000/ws';
 let connexion;
+let attentePing;
+let rl;
+
+function attendrePing() {
+  clearTimeout(attentePing);
+  attentePing = setTimeout(() => {
+    console.log('Connexion WebSocket perdue : aucun ping reçu');
+    connexion.terminate();
+  }, 20000);
+}
 try {
   connexion = new WebSocket(adresse, { handshakeTimeout: 15000 });
 } catch (err) {
@@ -11,19 +21,20 @@ try {
 
 connexion.on('open', () => {
   console.log('Connecté au serveur WebSocket', adresse);
+  attendrePing();
 });
+connexion.on('ping', attendrePing);
 connexion.on('close', () => {
+  clearTimeout(attentePing);
+  rl?.close();
   console.log('Connexion WebSocket fermée');
 });
 connexion.on('error', err => {
   console.error('Connexion WebSocket échouée :', err.message);
   process.exitCode = 1;
 });
-// Envoi et réception des messages WebSocket
 connexion.on('open', () => {
-  const readline = require('node:readline');
-
-  const rl = readline.createInterface({
+  rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout
   });
