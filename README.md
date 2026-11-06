@@ -1,19 +1,55 @@
-# Protocole
+# TP WebSocket et P2P
 
-Les deux ordinateurs doivent pouvoir joindre le port annoncé. Chaque POST contient l’en-tête Origin du serveur qui l’envoie. A envoie /syn à B, B enregistre le statut syn pour A et envoie /syn-ack à A. A renvoie /ack à B, qui passe le statut à connecté. Les trois appels renvoient 200 en cas de succès.
+## Installation
 
-Une origine absente ou invalide sur /syn ou /syn-ack donne 400. 
+Installer Node.js et npm, puis exécuter dans le dossier du projet :
 
-Un /ack sans statut syn pour son origine donne 403, y compris après une poignée de main déjà terminée. 
-
-Une erreur interne ou un appel au camarade qui échoue donne 500. 
-
-Les statuts sont conservés en mémoire jusqu’au redémarrage.
-
-
-
-Pour lancer le serveur, utilise la commande suivante en remplaçant l’adresse IP par celle de ton ordinateur , exemple:
-
-```powershell
-npm start -- http://0.0.0.0:3000
+```bash
+npm ci
 ```
+
+## Connexion WebSocket — Étape A
+
+Dans un premier terminal, démarrer le serveur :
+
+```bash
+npm start -- http://localhost:3000
+```
+
+Dans un deuxième terminal, démarrer le client :
+
+```bash
+npm run client -- ws://localhost:3000/ws
+```
+
+Le client affiche `Connecté au serveur WebSocket`. Le serveur affiche `Client WebSocket connecté`.
+
+Utiliser Ctrl+C pour arrêter le client ou le serveur.
+
+Pour tester depuis un autre ordinateur, remplacer `localhost` dans les deux commandes par l’IPv4 de l’ordinateur qui héberge le serveur. Le port 3000 doit être accessible depuis cet ordinateur.
+
+## Protocole HTTP entre camarades
+
+Les échanges HTTP sont implémentés dans `serveur.js`.
+
+Chaque camarade démarre son serveur avec sa propre IPv4, par exemple :
+
+```bash
+npm start -- http://172.20.10.2:3000
+```
+
+Dans ce même terminal, se connecter au serveur du camarade, par exemple :
+
+```text
+connect http://172.20.10.4:3001
+```
+
+Après la poignée de main, la console affiche `Connexion établie avec` le nom du camarade ou son URL. Les noms sont renseignés dans la Map `noms` de `serveur.js`.
+
+Pour envoyer un message à tous les camarades connectés :
+
+```text
+message {"action":"bonjour","payload":{"texte":"Salut !"}}
+```
+
+Le destinataire affiche `Message reçu de` avec le nom ou l’URL de l’expéditeur et le message.
