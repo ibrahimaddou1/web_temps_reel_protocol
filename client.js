@@ -1,9 +1,14 @@
+
 const WebSocket = require('ws');
 const readline = require('node:readline');
 const adresse = process.argv[2] || 'ws://localhost:3000/ws';
 let connexion;
 let attentePing;
 let rl;
+
+let tentative = 0;
+let timerReconnexion;
+let arretDemande = false;
 
 function attendrePing() {
   clearTimeout(attentePing);
@@ -12,62 +17,93 @@ function attendrePing() {
     connexion.terminate();
   }, 20000);
 }
-try {
-  connexion = new WebSocket(adresse, { handshakeTimeout: 15000 });
-} catch (err) {
-  console.error('Adresse WebSocket invalide :', err.message);
-  process.exit(1);
+function programmerReconnexion() {
+  if (arretDemande || timerReconnexion) return;
+
+  const delai = Math.min(1000 * (2 ** tentative), 30000);
+  tentative++;
+
+  console.log(`Reconnexion dans ${delai / 1000} seconde(s)...`);
+
+  timerReconnexion = setTimeout(() => {
+    timerReconnexion = undefined;
+    creerConnexion();
+  }, delai);
 }
 
-connexion.on('open', () => {
-  console.log('Connecté au serveur WebSocket', adresse);
-  attendrePing();
-});
-connexion.on('ping', attendrePing);
-connexion.on('close', () => {
-  clearTimeout(attentePing);
-  rl?.close();
-  console.log('Connexion WebSocket fermée');
-});
-connexion.on('error', err => {
-  console.error('Connexion WebSocket échouée :', err.message);
-  process.exitCode = 1;
-});
-connexion.on('open', () => {
-  rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
+function creerConnexion() {
+  if (arretDemande) return;
+
+  connexion = new WebSocket(adresse, {
+    handshakeTimeout: 15000
   });
 
-  console.log('Écris un message :');
+  ecouterConnexion();
+}
 
-  rl.on('line', (texte) => {
-    if (connexion.readyState !== WebSocket.OPEN) {
-      console.log('Connexion indisponible');
-      return;
+function ecouterConnexion() {
+  connexion.on('open', () => {
+    console.log('Connecté au serveur WebSocket', adresse);
+    tentative = 0;
+    attendrePing();
+
+    if (!rl) {
+      rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout
+      });
+
+      rl.on('line', (texte) => {
+        if (connexion.readyState !== WebSocket.OPEN) {
+          console.log('Connexion indisponible');
+          return;
+        }
+
+        const message = {
+          action: 'bonjour',
+          payload: {
+            texte: texte
+          }
+        };
+
+        connexion.send(JSON.stringify(message));
+        console.log('Message envoyé :', message);
+      });
     }
 
-    const message = {
-      action: 'bonjour',
-      payload: {
-        texte: texte
-      }
-    };
-
-    connexion.send(JSON.stringify(message));
-
-    console.log('Message envoyé :', message);
+    console.log('Écris un message :');
   });
-});
 
-connexion.on('message', (data) => {
-  console.log('Message reçu du serveur :', data.toString());
-});
+  connexion.on('ping', attendrePing);
 
+  connexion.on('close', () => {
+    clearTimeout(attentePing);
+
+    console.log('Connexion WebSocket fermée');
+
+    programmerReconnexion();
+  });
+
+  connexion.on('error', err => {
+    console.error('Connexion WebSocket échouée :', err.message);
+  });
+
+  connexion.on('message', data => {
+    console.log('Message reçu du serveur :', data.toString());
+  });
+}
+creerConnexion();
 process.on('SIGINT', () => {
-  if (connexion.readyState === WebSocket.OPEN) {
-    connexion.close();
-  } else {
+  arretDemande = true;
+
+  clearTimeout(attentePing);
+  clearTimeout(timerReconnexion);
+
+  rl?.close();
+
+  if (connexion) {
     connexion.terminate();
   }
+  process.exit(0);
 });
+  
