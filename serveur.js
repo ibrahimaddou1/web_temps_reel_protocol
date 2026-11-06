@@ -1,6 +1,7 @@
 const express = require('express');
 const axios = require('axios');
 const readline = require('node:readline');
+const { WebSocketServer } = require('ws');
 
 function origine(valeur) {
   try {
@@ -217,7 +218,7 @@ app.use((err, req, res, next) => {
   res.sendStatus(500);
 });
 
-app.listen(port, '0.0.0.0', () => {
+const serveur = app.listen(port, '0.0.0.0', () => {
   console.log('Serveur prêt', locale);
   console.log('Commandes : connect URL ou message {"action":"bonjour","payload":{}}');
   if (process.argv[2] === 'connect') {
@@ -225,6 +226,13 @@ app.listen(port, '0.0.0.0', () => {
     if (pair) connecter(pair);
     else console.error('URL du camarade invalide');
   }
+});
+
+const websocket = new WebSocketServer({ server: serveur, path: '/ws' });
+websocket.on('connection', (connexion, req) => {
+  console.log('Client WebSocket connecté', req.socket.remoteAddress);
+  connexion.on('close', () => console.log('Client WebSocket déconnecté'));
+  connexion.on('error', err => console.error('Erreur WebSocket :', err.message));
 });
 
 readline.createInterface({ input: process.stdin }).on('line', async ligne => {
