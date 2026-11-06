@@ -19,6 +19,12 @@ const urlLocale = new URL(locale);
 const port = Number(urlLocale.port || (urlLocale.protocol === 'https:' ? 443 : 80));
 if (urlLocale.protocol !== 'http:') throw new Error('Le serveur doit utiliser une URL http://');
 const pairs = new Map();
+const noms = new Map([
+  ['http://172.20.10.2:3000', 'Ibrahim'],
+  ['http://172.20.10.4:3001', 'Imal'],
+  ['http://172.20.10.4:3000', 'Imal'],
+  ['http://172.20.10.5:3001', 'Zack'],
+]);
 const actionsUniques = new Set();  
 const app = express();
 app.use(express.json());
@@ -116,8 +122,10 @@ app.post('/syn-ack', (req, res) => {
   res.sendStatus(202);
   lancer(pair, etat, 'ack', async () => {
     if (await retenter(pair, etat, () => appeler(pair, '/ack'))) {
+      if (etat.statut !== 'Ack') {
+        console.log('Connexion établie avec', noms.get(pair) || pair, `(${pair})`);
+      }
       etat.statut = 'Ack';
-      console.log('Connexion établie avec', pair);
     }
   });
 });
@@ -128,6 +136,9 @@ app.post('/ack', (req, res) => {
   const etat = pairs.get(pair);
   //retry
   if (!etat?.synRecu) return res.sendStatus(403);
+  if (etat.statut !== 'Ack') {
+    console.log('Connexion établie avec', noms.get(pair) || pair, `(${pair})`);
+  }
   etat.statut = 'Ack';
   res.sendStatus(204);
 });
@@ -153,7 +164,8 @@ app.post('/ingress', (req, res) => {
   const etat = pairs.get(pair);
   if (etat?.statut !== 'Ack') return res.sendStatus(403);
   if (actionsUniques.has(req.body.action) && etat.actions.has(req.body.action)) return res.sendStatus(409);
-  console.log('Message reçu de', pair, req.body); 
+  const nom = noms.get(pair) || pair;
+  console.log('Message reçu de', nom, req.body);
   if (actionsUniques.has(req.body.action)) etat.actions.add(req.body.action);
   res.sendStatus(201);
 });
