@@ -1,0 +1,1 @@
+{"name":"poignee-de-main","version":"1.0.0","private":true,"scripts":{"start":"node serveur.js","connect":"node serveur.js connect"},"dependencies":{"axios":"^1.7.0","express":"^5.1.0"}}
