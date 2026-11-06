@@ -241,6 +241,40 @@ websocket.on('connection', connexion => {
 websocket.on('error', err => {
   console.error('Erreur serveur WebSocket :', err.message);
 });
+//******/
+// Gestion de l'envoi et de la réception des messages WebSocket
+websocket.on('connection', (connexion) => {
+
+  connexion.on('message', (data) => {
+    try {
+      const message = JSON.parse(data.toString());
+
+      if (!messageValide(message)) {
+        connexion.send(JSON.stringify({
+          type: 'error',
+          message: 'Format de message invalide'
+        }));
+        return;
+      }
+
+      console.log('Message WebSocket reçu :', message);
+
+      connexion.send(JSON.stringify({
+        type: 'message',
+        action: 'confirmation',
+        payload: message.payload
+      }));
+
+    } catch (err) {
+      connexion.send(JSON.stringify({
+        type: 'error',
+        message: 'JSON invalide'
+      }));
+    }
+  });
+
+});
+//*****/
 
 readline.createInterface({ input: process.stdin }).on('line', async ligne => {
   try {
